@@ -21,5 +21,7 @@ ptrMemWord createMemWord(char value[]);
 
 void freeMemWord(void* ptr);
 
+void printMemWord(void* ptr);
+
 
 #endif

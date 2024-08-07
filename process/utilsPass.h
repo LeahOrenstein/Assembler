@@ -5,31 +5,29 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "errors.h"
 #include "utils.h"
 #include "tableStructure/list.h"
-
-#define DATA_INSTRUCTIONS {".data", ".string"}
-#define CODE_INSTRUCTIONS_NAMES {"mov", "cmp", "add", "sub", "lea", "clr", "not", "inc", "dec", "jmp", "bne", "red", "prn", "jsr", "rts", "stop"}
-typedef enum {FALSE, TRUE} boolean;
+#include "definitions/definitions.h"
+#include "validationFunctions/utilsError.h"
 
 
 int isDataLable(char* lable);
-
 int isCodeLable(char* lable);
-
 int isExternLable(char* lable);
-
 int isEntryLable(char* lable);
-
 int numOfOperands(char* line);
-
-int processDataInstruction(char* line, ptrNode *dataImage);
-
 int isAlphanumeric(const char *str);
-
 int numOfMemWord(char* line);
+char* getOperand(char* line, char** endOfOperand);
+externEntryType retExEnType(const char* line);
+int isImmediate(char* str);
+int isDirect(char* str);
+int isDirectRegister(char* str);
+int isInDirectRegister(char* str);
+dataType retDataType(char* line);
+codeType retCodeType(char* line);
+void intToBinaryString(int num, char* result, int length);
+char* getOpCode(codeType codeType);
 
-int processCodeInstruction(char* line, ptrNode *codeImage);
 
 #endif 

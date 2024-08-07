@@ -4,8 +4,10 @@
 #include <stdio.h>
 
 #include "structures/symbol.h"
+#include "structures/symbolAppearance.h"
 #include "tableStructure/list.h"
-#include "errors.h"
+#include "validationFunctions/errors.h"
+#include "processingFunctions/processingLineFunct.h"
 #include "utilsPass.h"
 #include "utils.h"
 
@@ -14,10 +16,9 @@
 
 /*Functions for the first pass*/
 
-int firstPass(const char* inputFileName, ptrNode* memoryImage, ptrNode* symbolListPtr);
+int firstPass(char* inputFileName, ptrNode* memoryImage, ptrNode* symbolListPtr, ptrNode* entryList);
 
-int processLine(FILE* inputFile, char* inputFileName, char* line, ptrNode* symbolListPtr, ptrNode* codeImage, ptrNode* dataImage, int* IC, int* DC, int lineNumber);
-
+int processLine(char* inputFileName, char* line, ptrNode* symbolListPtr, ptrNode entryList, ptrNode* codeImage, ptrNode* dataImage, ptrNode* symAppearMem, int* IC, int* DC, int lineNumber);
 
 
 

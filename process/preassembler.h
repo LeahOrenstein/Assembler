@@ -10,11 +10,8 @@
 #include "structures/command.h"
 #include "tableStructure/list.h"
 #include "utils.h"
+#include "definitions/definitions.h"
 
-enum {false, true};
-
-#define MAX_LINE_LENGTH 81
-#define MAX_LABEL_LENGTH 31
 
 /* Function prototypes */
 int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacroList, const char* inputFileName);

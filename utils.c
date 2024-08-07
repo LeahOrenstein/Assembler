@@ -1,41 +1,24 @@
 #include "utils.h"
 
 
-/* Helper function to trim whitespace */
-void trimWhitespace(char* str) 
+/* Helper function to trim whitespace and return a new string */
+void trimWhitespace(const char* str, char* result, size_t result_size) 
 {
-    char* end;
-    char* src;
-    char* dst;
-
-    /*Trim leading space*/ 
-    src = str;
-    while(isspace((unsigned char)*src)) src++;
-
-    /* If all spaces, make it an empty string and return*/ 
-    if(*src == 0)  
+    size_t start = 0, end = strlen(str) - 1, i = 0;
+    
+    while (isspace((unsigned char)str[start])) start++;
+    while (end > start && isspace((unsigned char)str[end])) end--;
+    
+    for (i = 0; start <= end && i < result_size - 1; start++, i++) 
     {
-        *str = '\0';
-        return;
+        result[i] = str[start];
     }
-
-    /*Trim trailing space*/ 
-    end = src + strlen(src) - 1;
-    while(end > src && isspace((unsigned char)*end)) end--;
-    *(end+1) = 0;
-
-    /*Shift the string to the beginning of the input*/ 
-    dst = str;
-    while(*src)
-    {
-        *dst++ = *src++;
-    }
-    *dst = '\0';
+    result[i] = '\0';
 }
 
 
 /*Function for initializing the file name vatiables*/
-char* AllocateMemFileName(char* fileName, size_t size)
+char* AllocateMemFileName(const char* fileName, size_t size)
 {
     /*Allocating memory for the variable*/
     char* string = malloc(sizeof(char)* size);
@@ -50,4 +33,80 @@ char* AllocateMemFileName(char* fileName, size_t size)
 
     /*Returning*/
     return string;
+}
+
+
+char* skipWhitespace(char* str) 
+{
+    if (str == NULL) return NULL;
+
+    while (*str != '\0' && isspace((unsigned char)*str)) 
+    {
+        str++;
+    }
+
+    return str;
+}
+
+
+
+void trimAndFormatString(const char *input, char output[MAX_LINE_LENGTH]) 
+{
+    int length = strlen(input);
+    int start = 0, end = length - 1;
+    int j = 0;
+    int commaFound = 0;
+    int i;
+
+    /* Remove leading whitespace */
+    while (start < length && isspace((unsigned char)input[start])) 
+    {
+        start++;
+    }
+
+    /* Remove trailing whitespace */
+    while (end > start && isspace((unsigned char)input[end])) 
+    {
+        end--;
+    }
+
+    /* Process the string */
+    for (i = start; i <= end && j < MAX_LINE_LENGTH - 1; i++) 
+    {
+        /* Remove duplicate whitespace */
+        if (isspace((unsigned char)input[i]) && (j == 0 || isspace((unsigned char)output[j - 1]))) 
+        {
+            continue;
+        }
+        
+        /* Handle commas */
+        if (input[i] == ',') 
+        {
+            /* Remove space before comma if not after another comma */
+            if (j > 0 && isspace((unsigned char)output[j - 1]) && !commaFound) 
+            {
+                j--;
+            }
+            output[j++] = ',';
+            if (j < MAX_LINE_LENGTH - 1) 
+            {
+                output[j++] = ' ';
+            }
+            commaFound = 1;
+        } 
+        else 
+        {
+            output[j++] = input[i];
+            commaFound = 0;
+        }
+    }
+
+    /* Remove trailing space if it exists */
+    if (j > 0 && isspace((unsigned char)output[j - 1])) 
+    {
+        j--;
+    }
+
+    /* Null-terminate the string */
+    output[j] = '\0';
 }

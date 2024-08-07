@@ -13,7 +13,7 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
 
     /*Creating a macro structure for keeping macros if found*/
     ptrMacro currentMacro = NULL;
-    char* macroName;
+    char macroName[MAX_LABEL_LENGTH + 1];
 
     /*Variable to check if there are extra chars*/
     char* afterMacroName;
@@ -27,26 +27,39 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
     /*for each line in the input file*/
     while (fgets(line, sizeof(line), inputFile) != NULL)
     {
+        /*If it is a note line*/
+        if (line[0] == ';') 
+        {
+            countLines++;
+            continue;
+        }
 
         /*If the line is to long, there is an error*/
-        if (strcspn(line, "\n") >= 81)
+        if (strcspn(line, "\n") >= MAX_LINE_LENGTH)
         {
             fprintf(stderr, "Error: Over 80 charecters in line %d in the file %s\n", countLines, inputFileName);
             errorAccured = true;
+            continue;
         }
 
         line[strcspn(line, "\n")] = 0;  /* Remove newline character */
         
         /* Clearing the begining and the end from white chars */
-        strncpy(trimmedLine, line, sizeof(trimmedLine) - 1); 
-        trimWhitespace(trimmedLine);
+        trimWhitespace(line, trimmedLine, MAX_LINE_LENGTH);
 
+        /*If it is an empty line*/
+        if (trimmedLine[0] == '\0') 
+        {
+            countLines++;
+            continue;
+        }
+
+        /*If there is a macro definition*/
         if (strncmp(trimmedLine, "macr", 4) == 0) 
         {
             inMacroDefinition = true;
-            macroName = trimmedLine + 4;  /* Skip "macr" */
-            trimWhitespace(macroName);
-            
+            trimWhitespace(trimmedLine + 4, macroName, MAX_LABEL_LENGTH);
+
             /*Check if there's anything after the macro name */
             afterMacroName = macroName;
             while (*afterMacroName && !isspace(*afterMacroName)) afterMacroName++;
@@ -94,7 +107,9 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
 
             if (errorInMacroDef)
             {
-                if (currentMacro != NULL) {
+                if (currentMacro != NULL) 
+                {
+                    freeList(&(currentMacro->commandList), freeCommand);
                     free(currentMacro);  
                     currentMacro = NULL;
                 }
@@ -136,7 +151,7 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
     *ptrMacroList = macroList;
 
     /*Returning 1 for success, 0 if errors were found*/
-    return errorAccured? 0 : 1;
+    return errorAccured? false : true;
 }
 
 
@@ -146,13 +161,13 @@ int expandMacros(FILE* inputFile, FILE* outputFile, ptrNode macroList)
 {
     char line[MAX_LINE_LENGTH];
     char trimmedLine[MAX_LINE_LENGTH];
+    char tempMacAfterLable[MAX_LINE_LENGTH];
     char checkMacAfterLable[MAX_LINE_LENGTH];
     ptrNode macroNode;
     ptrMacro macro;
     ptrNode currentCommand;
     ptrCommand cmd;
-    int i;    
-
+    int i; 
 
     /*For each line in the input file*/
     while (fgets(line, MAX_LINE_LENGTH, inputFile)) 
@@ -160,8 +175,7 @@ int expandMacros(FILE* inputFile, FILE* outputFile, ptrNode macroList)
         line[strcspn(line, "\n")] = 0;  /* Remove newline character */
         
         /* Clearing the begining and the end from white spaces */
-        strncpy(trimmedLine, line, sizeof(trimmedLine) - 1); 
-        trimWhitespace(trimmedLine);
+        trimWhitespace(line, trimmedLine, MAX_LINE_LENGTH);
 
         /*Taking care of note lines*/
         if (trimmedLine[0] == ';')
@@ -183,10 +197,15 @@ int expandMacros(FILE* inputFile, FILE* outputFile, ptrNode macroList)
         {
 
             /*Checking if there is a macro call after the lable*/
-            strncpy(checkMacAfterLable, trimmedLine + i + 1, strlen(trimmedLine) - i + 1);
+            strncpy(tempMacAfterLable, trimmedLine + i + 1, strlen(trimmedLine) - i + 1);
 
             /*Removing white spaces from possible macro name*/
-            trimWhitespace(checkMacAfterLable);
+            trimWhitespace(tempMacAfterLable, checkMacAfterLable, MAX_LINE_LENGTH);
+            if (checkMacAfterLable == NULL) 
+            {
+                fprintf(stderr, "Memory allocation failed while expanding macros\n");
+                exit(1);
+            }
 
             macroNode = searchKey(macroList, checkMacAfterLable);
 

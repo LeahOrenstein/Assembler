@@ -19,6 +19,12 @@ ptrSymbol createSymbol(int position, symbolType type)
     return ptr;
 }
 
+/*Function to print a symbol*/
+void printSymbol(void* symbol)
+{
+    printf("position: %d, type: %d\n", ((ptrSymbol)symbol)->position, ((ptrSymbol) symbol)->type);
+}
+
 /*Function to free a symbol*/
 void freeSymbol(void* ptr)
 {   

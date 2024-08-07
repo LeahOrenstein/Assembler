@@ -5,13 +5,14 @@
 #include "process/preassembler.h"
 #include "process/firstPass.h"
 #include "testing.h"
+#include "definitions/definitions.h"
+#include "process/processingFunctions/processingLineFunct.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 enum {inputFileName, baseName, amFile, obFile, entFile, extFile};
-
 
 
 /*Notes:
@@ -22,24 +23,50 @@ int main(int argc, char *argv[])
 
     int i, j;
 
+    int L = 0;
+
+    int DC = 0;
+
+    int IC = 100;
+
     int suffix[] = {3, 0, 3, 3, 4, 4};
 
     char* fileNames[6];
 
+    ptrNode memoryImage = NULL;
+
     ptrNode symbolList = NULL;
 
-    ptrNode memoryImage = NULL;
+    ptrNode codeImage = NULL;
+
+    ptrNode dataImage = NULL;
+
+    ptrNode symAppearMem = NULL;
+
+    
+    char line[MAX_LINE_LENGTH] = {0};
 
     char* fileNamesForPrinting[] = {"inputFileName", "baseName", "amFile", "obFile", "entFile", "extFile"};
 
+    strncpy(line, " END: stop", MAX_LINE_LENGTH);
+
+    printf("In trial. line: %s\n", line);
+
+    /*MAX_VALUE 16383*/
     
+    printf("checking validation of processLine: %d\n", processLine("file1",  line,  &symbolList, &codeImage, &dataImage, &symAppearMem, &IC, &DC, L));
 
+    printListStructure(codeImage);
+    printListStructureAndVal(symbolList, printSymbol);
+    printListStructureAndVal(symAppearMem, printSymbolAppearance);
 
-    printf("checking validation of label: %d\n", errorInLabel("22abelvvvv vvvvv:vvs", "file name", 1));
+    printf("IC: %d\n", IC);
+    printf("DC: %d\n", DC);
+
 
     if (argc < 2) 
     {
-        fprintf(stderr, "Usage: %s <file1.as> <file2.as> ...\n", argv[0]);
+        fprintf(stderr, "Usage: %s <file1> <file2> ...\n", argv[0]);
         exit(1);
     }
 
@@ -67,7 +94,7 @@ int main(int argc, char *argv[])
         /* Step 1: Pre-assembler (macro expansion)*/
         if (!preprocessFile(fileNames [inputFileName], fileNames [amFile])) 
         {
-            fprintf(stderr, "Error in pre-assembler stage for file %s\n", inputFileName);
+            fprintf(stderr, "Error in pre-processor stage for file %s\n", inputFileName);
             continue;
         }
 

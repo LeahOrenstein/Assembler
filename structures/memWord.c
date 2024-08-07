@@ -25,3 +25,12 @@ void freeMemWord(void* ptr)
 {
     free((ptrMemWord)ptr);
 }
+
+
+/*Function for printing a memory word*/
+void printMemWord(void* ptr)
+{
+    char decimalString[6];  
+    sprintf(decimalString, "%d", (int)strtol(((ptrMemWord)ptr)->value, NULL, 2));
+    printf("binary: %s. value: %c\n", ((ptrMemWord)ptr)->value, atoi(decimalString));
+}

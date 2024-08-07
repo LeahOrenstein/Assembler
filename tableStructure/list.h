@@ -29,8 +29,8 @@ ptrNode searchKey(ptrNode head, char key[]);
 void printKeys(ptrNode head);
 void printValues(ptrNode head, void (*ptrPrintFunc)(void*));
 void freeList(ptrNode* head, void (*freeValue)(void*));
+void printListStructureAndVal(ptrNode head, void (*ptrPrintFunc)(void*));
 void printListStructure(ptrNode head);
-
 
 
 #endif

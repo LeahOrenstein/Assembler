@@ -64,7 +64,7 @@ void printDifferences(const char* file1, const char* file2) {
     f2 = fopen(file2, "r");
 
     if (f1 == NULL || f2 == NULL) {
-        printf("Error opening files for comparison.\n");
+        fprintf(stderr, "Error opening files for comparison.\n");
         return;
     }
 

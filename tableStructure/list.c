@@ -188,12 +188,32 @@ void freeList(ptrNode* head, void (*freeValue)(void*))
 
 
 /*Function for debuging*/
-void printListStructure(ptrNode head) {
+void printListStructureAndVal(ptrNode head, void (*ptrPrintFunc)(void*)) 
+{
     ptrNode current = head;
     int count = 0;
     printf("Printing list structure:\n");
 
-    while (current != NULL) {
+    while (current != NULL) 
+    {
+        printf("Node %d: Key = %s\n", count++, current->key);
+        ptrPrintFunc(current->ptrVal);
+        current = current->next;
+    }
+
+    printf("Total nodes: %d\n", count);
+}
+
+
+/*Function for debuging*/
+void printListStructure(ptrNode head) 
+{
+    ptrNode current = head;
+    int count = 0;
+    printf("Printing list structure:\n");
+
+    while (current != NULL) 
+    {
         printf("Node %d: Key = %s\n", count++, current->key);
         current = current->next;
     }
