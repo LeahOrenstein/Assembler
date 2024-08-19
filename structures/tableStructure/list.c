@@ -8,9 +8,10 @@ ptrNode createNode(char key[], void* val)
     ptrNode newNode = (ptrNode)malloc(sizeof(struct node));
 
     /* Check if memory allocation was successful */
-    if (newNode == NULL) {
+    if (newNode == NULL) 
+    {
         fprintf(stderr, "Memory allocation failed\n");
-        exit(1);
+        safeExit(1);
     }
 
     /* Copy the key into the new node */
@@ -219,4 +220,15 @@ void printListStructure(ptrNode head)
     }
 
     printf("Total nodes: %d\n", count);
+}
+
+void printEntryList(ptrNode entryList) 
+{
+    ptrNode current = entryList;
+    int count = 0;
+    while (current != NULL) {
+        printf("Entry %d: Key: %s, Value address: %p\n", 
+               count++, current->key, current->ptrVal);
+        current = current->next;
+    }
 }

@@ -15,7 +15,7 @@ int errorInData(char* line, char* inputFileName, int lineNumber)
     /*If the command name is not valid*/
     if (type == ERROR_DATA)
     {
-        fprintf(stderr, "Error: Invalid data command. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Invalid data command.\n", inputFileName, lineNumber);
         return true;
     }
 
@@ -29,21 +29,21 @@ int errorInData(char* line, char* inputFileName, int lineNumber)
     /*If the line is empty*/
     if (strlen(line) == 0)
     {
-        fprintf(stderr, "Error: Empty data line. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: No arguments given in a '.data' command.\n", inputFileName, lineNumber);
         return true;
     }
 
     /*If there is a comma at the end of the line*/
     if (line[strlen(line) - 1] == ',')
     {
-        fprintf(stderr, "Error: Comma at the end of the line. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Illegal comma at the end of the line.\n", inputFileName, lineNumber);
         error = true;
     }
 
     /*If there is a comma at the beginning of the line*/
     if (line[0] == ',')
     {
-        fprintf(stderr, "Error: Illegal comma. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Illegal comma.\n", inputFileName, lineNumber);
         error = true;
     }
 
@@ -52,7 +52,7 @@ int errorInData(char* line, char* inputFileName, int lineNumber)
     {
         if (!isValidQuotedString(line))
         {
-            fprintf(stderr, "Error: Invalid string format. file: %s, line: %d\n", inputFileName, lineNumber);
+            fprintf(stderr, "Error:%s:%d: Invalid string format in a '.string' command.\n", inputFileName, lineNumber);
             return true;
         }
         return false;
@@ -61,28 +61,28 @@ int errorInData(char* line, char* inputFileName, int lineNumber)
     /*If there are two commas in a row*/
     if (multipleCommas(line))
     {
-        fprintf(stderr, "Error: Multiple commas. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Multiple commas, must be a single comma between two arguments.\n", inputFileName, lineNumber);
         error = true;
     }
 
     /*If the operands are not separated by a comma*/
     if (hasAdjacentItemsWithoutComma(line))
     {
-        fprintf(stderr, "Error: Adjacent items without comma. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Adjacent items without comma, must be a single comma between two arguments.\n", inputFileName, lineNumber);
         error = true;
     }
 
     /*If the operands are not the valid type*/
     if (!operandsAreIntegers(line))
     {
-        fprintf(stderr, "Error: Invalid operand type. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Invalid operand in a '.data' command, not an integer.\n", inputFileName, lineNumber);
         return true;
     }
 
     /*If the operands are not in valid range*/
     if (!operandsAreInRange(line))
     {
-        fprintf(stderr, "Error: Operand out of range. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Operand out of range. Valid range: [%d, %d].\n", MIN_INTEGER_VALUE, MAX_INTEGER_VALUE, inputFileName, lineNumber);
         error = true;
     }
 
@@ -109,7 +109,7 @@ int errorInCode(char* line, char* inputFileName, int lineNumber)
     /*If the command name is not valid*/
     if (type == ERROR_CODE)
     {
-        fprintf(stderr, "Error: Invalid code command. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Invalid code command.\n", inputFileName, lineNumber);
         return true;
     }
 
@@ -131,43 +131,43 @@ int errorInCode(char* line, char* inputFileName, int lineNumber)
             return false;
         }
 
-        /*Else - Error: Missing parameters*/
-        fprintf(stderr, "Error: Missing operand in code line. file: %s, line: %d\n", inputFileName, lineNumber);
+        /*Else - Error:%s:%d: missing parameters*/
+        fprintf(stderr, "Error:%s:%d: Too few arguments.\n", inputFileName, lineNumber);
         return true;
     }
 
     /*If the command has arguememts but it mist not have*/
     if (type == rts || type == stop)
     {
-        fprintf(stderr, "Error: Command with no operands needed has operands. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Command with extra operands.\n", inputFileName, lineNumber);
         return true;
     }
 
     /*If there is a comma at the end of the line*/
     if (line[strlen(line) - 1] == ',')
     {
-        fprintf(stderr, "Error: Comma at the end of the line. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Comma at the end of the line.\n", inputFileName, lineNumber);
         return true;
     }
 
     /*If there is a comma at the beginning of the line*/
     if (line[0] == ',')
     {
-        fprintf(stderr, "Error: Illegal comma line. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Illegal comma line.\n", inputFileName, lineNumber);
         return true;
     }
 
     /*If there are two commas in a row*/
     if (multipleCommas(line))
     {
-        fprintf(stderr, "Error: Multiple commas. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Multiple commas, must be a single comma between two arguments.\n", inputFileName, lineNumber);
         return true;
     }
 
     /*If the operands are not separated by a comma*/
     if (hasAdjacentItemsWithoutComma(line))
     {
-        fprintf(stderr, "Error: Adjacent items without comma. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Adjacent items without comma.\n", inputFileName, lineNumber);
         return true;
     }
 
@@ -181,19 +181,20 @@ int errorInCode(char* line, char* inputFileName, int lineNumber)
         /*If there is no operrand, an operand is missing*/
         if (*operand == '\0' || *operand == EOF ) 
         {
-            fprintf(stderr, "Error: Missing operand in code line. file: %s, line: %d\n", inputFileName, lineNumber);
+            fprintf(stderr, "Error:%s:%d: Too few arguments.\n", inputFileName, lineNumber);
             return true;
         }
 
         /*If the operand found is too long (no valid type possible)*/
         if (endOfOperand - operand > MAX_LABEL_LENGTH)
         {
-            fprintf(stderr, "Error: Invalid operand. file: %s, line: %d\n", inputFileName, lineNumber);
+            fprintf(stderr, "Error:%s:%d: Invalid operand, too long.\n", inputFileName, lineNumber);
             return true;
         }
 
         /*Copy the operand to the temp operand without the rest of the line*/
         strncpy(tempOperand, operand, endOfOperand - operand);
+        tempOperand[endOfOperand - operand] = '\0'; 
         operand = tempOperand;
 
         /*Check validation of the operand*/
@@ -208,7 +209,7 @@ int errorInCode(char* line, char* inputFileName, int lineNumber)
     /*If there are extra chars after the legal command*/
     if (*operand != '\0' && *operand != EOF)
     {
-        fprintf(stderr, "Error: Extra chars after the legal command. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Extra chars after the command.\n", inputFileName, lineNumber);
         return true;
     }
     
@@ -216,7 +217,7 @@ int errorInCode(char* line, char* inputFileName, int lineNumber)
     /*If the operands are not the valid adressing mode*/
     if (!validAdressingModes(line, type))
     {
-        fprintf(stderr, "Error: Invalid adressing mode. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Invalid adressing mode.\n", inputFileName, lineNumber);
         return true;
     }
 
@@ -227,48 +228,66 @@ int errorInCode(char* line, char* inputFileName, int lineNumber)
 int errorInLabel(char* label, char* inputFileName, int lineNumber, ptrNode symbolList)
 {
     int error = false;
+    ptrNode tempNode;
 
     /*If label is empty*/
     if (strlen(label) == 0)
     {
-        fprintf(stderr, "Error: Empty label. file: %s, line: %d\n", inputFileName, lineNumber);
-        free(label);
+        fprintf(stderr, "Error:%s:%d: Empty label.\n", inputFileName, lineNumber);
         return true;
     }
 
-    /*If label name is used already*/
-    if (searchKey(symbolList, label))
+    /*If label name is used already, or an external label*/
+    if ((tempNode = searchKey(symbolList, label)) != NULL)
     {
-        fprintf(stderr, "Error: Label name is already used. Error is. file: %s, line: %d\n", inputFileName, lineNumber);
-        free(label);
+        if (((ptrSymbol)tempNode->ptrVal)->type == SYMBOL_TYPE_EXTERN)
+        {
+            fprintf(stderr, "Error:%s:%d: External label is also defined in the file.\n", inputFileName, lineNumber);
+            return true;
+        }
+        fprintf(stderr, "Error:%s:%d: Label is already used.\n", inputFileName, lineNumber);
         return true;
     }
 
     /*If label is too long*/
     if (strlen(label) > MAX_LABEL_LENGTH)
     {
-        fprintf(stderr, "Error: Label is too long. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Label is too long. Should contain 31 charecters the most.\n", inputFileName, lineNumber);
+        error = true;
+    }
+
+    /*If the label is 'macr' or 'endmacr'*/
+    if (strcmp(label, "macr") == 0 || strcmp(label, "endmacr") == 0)
+    {
+        fprintf(stderr, "Error:%s:%d: Label is a known word in the assembly language.\n", inputFileName, lineNumber);
         error = true;
     }
 
     /*If label does not start with a letter*/
     if (!isalpha(label[0]))
     {
-        fprintf(stderr, "Error: Label does not start with a letter. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Label does not start with a letter.\n", inputFileName, lineNumber);
+        error = true;
+    }
+
+    /*If the label name is a known word in the assembly language*/
+    if(isRegister(label) || isCodeLine(label))
+    {
+        fprintf(stderr, "Error:%s:%d: Label is a known word in the assembly language.\n", inputFileName, lineNumber);
         error = true;
     }
 
     /*If label ends with white space*/
     if (label[strlen(label) - 1] == ' ' || label[strlen(label) - 1] == '\t')
     {
-        fprintf(stderr, "Error: Label ends with white space. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Label ends with white space.\n", inputFileName, lineNumber);
         return true;
     }
 
     /*If not all charecters are letters / numbers*/
     if (!isAlphanumeric(label))
     {
-        fprintf(stderr, "Error: Label contains non-alphanumeric charecters. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Label contains non-alphanumeric charecters.\n", inputFileName, lineNumber);
         error = true;
     }
 
@@ -292,7 +311,7 @@ int errorInExEn(char* line, char* inputFileName, int lineNumber)
 
     if (*line != '.' || type == ERROR_EXTERN_ENTRY)
     {
-        fprintf(stderr, "Error: Invalid command. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Invalid command.\n", inputFileName, lineNumber);
         return true;
     }
 
@@ -302,7 +321,7 @@ int errorInExEn(char* line, char* inputFileName, int lineNumber)
     /*If there is an ilegal comma in the line*/
     if (line[strlen(line) - 1] == ',' || line[0] == ',')
     {
-        fprintf(stderr, "Error: Illegal comma. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Illegal comma.\n", inputFileName, lineNumber);
         return true;
     }
 
@@ -312,14 +331,14 @@ int errorInExEn(char* line, char* inputFileName, int lineNumber)
     /*If the operand is too long*/
     if (strlen(line) > MAX_LABEL_LENGTH)
     {
-        fprintf(stderr, "Error: Operand is an invalid label. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Operand is an invalid label.\n", inputFileName, lineNumber);
         return true;
     }
 
     /*If the operand is empty*/
     if (strlen(line) == 0)
     {
-        fprintf(stderr, "Error: Empty operand. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Empty operand.\n", inputFileName, lineNumber);
         return true;
     }
 
@@ -328,14 +347,14 @@ int errorInExEn(char* line, char* inputFileName, int lineNumber)
     /*If there are extra charecters after the end of the line operands*/
     if( *endOfOperand != '\0' && *endOfOperand != EOF)
     {
-        fprintf(stderr, "Error: Extra charecters or invalid number of operands. file: %s,  line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Extra charecters or invalid number of operands. File: %s,  line: %d\n", inputFileName, lineNumber);
         return true;
     }
 
     /*If the operand is not a valid label*/
     if (errorInLabelAsOperand(line))
     {
-        fprintf(stderr, "Error: Operand is an invalid label in an %s command. file: %s, line: %d\n", exEnCommands[type],inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Operand is an invalid label in an %s command.\n", exEnCommands[type],inputFileName, lineNumber);
         return true;
     }
 

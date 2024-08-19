@@ -203,7 +203,7 @@ int isValidQuotedString(char* str)
     for (i = 1; i < len - 1; i++) 
     {
         /* All ASCII values from 0 to 127 are valid */
-        if ((unsigned char)str[i] > 127) 
+        if (!isprint((unsigned char)str[i])) 
         {
             return false;
         }
@@ -452,17 +452,22 @@ int errorInLabelAsOperand(char* line)
 
 int isValidOperand(char* operand, char* inputFileName, int lineNumber)
 {
+    char tempOperand[MAX_LABEL_LENGTH + 1] = {0};
+    strncpy(tempOperand, operand, MAX_LABEL_LENGTH);
+    tempOperand[MAX_LABEL_LENGTH] = '\0';
+    operand = tempOperand;
+
     /*If the operand is empty*/
     if (strlen(operand) == 0)
     {
-        fprintf(stderr, "Error: Empty operand. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Empty operand.\n", inputFileName, lineNumber);
         return false;
     }
 
     /*If the operand is a register (In an indirect adressing mode, otherwise it would be a label) out of registers' range*/
     if (isRegisterOutOfRange(operand + 1) && operand[0] == '*')
     {
-        fprintf(stderr, "Error: Register out of range. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Register out of range. Valid range: [r0 - r7].\n", inputFileName, lineNumber);
         return false;
     }
 
@@ -472,7 +477,7 @@ int isValidOperand(char* operand, char* inputFileName, int lineNumber)
     /*If the operand is an immidiate out of 12 bit range*/
     if (isImmediateOutOfRange(operand + 1) && operand[0] == '#')
     {
-        fprintf(stderr, "Error: Immediate out of range. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Immediate value out of range. Valid range: [%d, %d].\n", inputFileName, lineNumber, MIN_IMMIDIATE_VALUE, MAX_IMMIDIATE_VALUE);
         return false;
     }
 
@@ -482,7 +487,7 @@ int isValidOperand(char* operand, char* inputFileName, int lineNumber)
     /*If the operand is a invalid label*/
     if (errorInLabelAsOperand(operand))
     {
-        fprintf(stderr, "Error: Invalid label or unidentified operand. file: %s, line: %d\n", inputFileName, lineNumber);
+        fprintf(stderr, "Error:%s:%d: Invalid label or unidentified operand.\n", inputFileName, lineNumber);
         return false;
     }
 

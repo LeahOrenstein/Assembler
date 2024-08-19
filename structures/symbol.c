@@ -2,19 +2,20 @@
 
 
 /*Creating a symbol from the given values*/
-ptrSymbol createSymbol(int position, symbolType type)
+ptrSymbol createSymbol(int position, symbolType type, int lineNumber)
 {
     /*Initializing the values*/
     ptrSymbol ptr = malloc(sizeof(symbol));
     if (ptr == NULL)
     {
         fprintf(stderr, "Error: can not allocate memory for a new symbol\n");
-        exit(1);
+        safeExit(1);
     }
 
     /*Updating relevant values*/
     ptr->position = position;
     ptr->type = type;
+    ptr->lineNum = lineNumber;
 
     return ptr;
 }

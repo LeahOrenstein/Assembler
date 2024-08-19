@@ -5,26 +5,25 @@ CC = gcc
 CFLAGS = -ansi -pedantic -Wall
 
 # Include directories
-INCLUDES = -I. -Iprocess -Iprocess/validationFunctions -Istructures -ItableStructure -Idefinitions
+INCLUDES = -I. -ImainAssembler -Iprocess -Iprocess/validationFunctions -Iprocess/processingFunctions -Istructures -Istructures/tableStructure -Idefinitions
 
 # Source files
-SRCS = Trial.c testing.c utils.c \
-       process/preassembler.c process/firstPass.c process/utilsPass.c \
+SRCS = mainAssembler/assembler.c mainAssembler/utils.c mainAssembler/freeingAllocationsFunc.c \
+       process/preAssembler.c process/firstPass.c process/secondPass.c process/utilsPass.c \
        process/validationFunctions/errors.c process/validationFunctions/utilsError.c \
        process/processingFunctions/processingLineFunct.c \
-       structures/command.c structures/macro.c structures/memWord.c structures/symbol.c \
+       structures/command.c structures/macro.c structures/symbol.c \
        structures/symbolAppearance.c \
-       tableStructure/list.c \
-       definitions/definitions.c
+       structures/tableStructure/list.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)
 
 # Default target
-all: run
+all: assembler
 
 # Linking the final executable
-run: $(OBJS)
+assembler: $(OBJS)
 	$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $@
 
 # Generic rule for creating object files
@@ -33,22 +32,24 @@ run: $(OBJS)
 
 # Clean target
 clean:
-	del /Q *.o process\*.o process\validationFunctions\*.o process\processingFunctions\*.o structures\*.o tableStructure\*.o definitions\*.o run.exe
+	del /Q mainAssembler\*.o process\*.o process\validationFunctions\*.o process\processingFunctions\*.o structures\*.o structures\tableStructure\*.o assembler.exe
 
 # Dependencies
-Trial.o: Trial.c Trial.h process/preassembler.h process/firstPass.h structures/command.h structures/macro.h testing.h
-testing.o: testing.c testing.h process/preassembler.h
-utils.o: utils.c utils.h
-process/preassembler.o: process/preassembler.c process/preassembler.h structures/macro.h structures/command.h tableStructure/list.h utils.h
-process/firstPass.o: process/firstPass.c process/firstPass.h structures/symbol.h tableStructure/list.h process/validationFunctions/errors.h process/utilsPass.h utils.h
-process/utilsPass.o: process/utilsPass.c process/utilsPass.h utils.h tableStructure/list.h
-process/validationFunctions/errors.o: process/validationFunctions/errors.c process/validationFunctions/errors.h process/utilsPass.h tableStructure/list.h
-process/validationFunctions/utilsError.o: process/validationFunctions/utilsError.c process/validationFunctions/utilsError.h
-process/processingFunctions/processingLineFunct.o: process/processingFunctions/processingLineFunct.c process/processingFunctions/processingLineFunct.h
+mainAssembler/assembler.o: mainAssembler/assembler.c process/preAssembler.h process/firstPass.h process/secondPass.h structures/command.h structures/macro.h mainAssembler/freeingAllocationsFunc.h definitions/definitions.h
+mainAssembler/utils.o: mainAssembler/utils.c mainAssembler/utils.h
+mainAssembler/freeingAllocationsFunc.o: mainAssembler/freeingAllocationsFunc.c mainAssembler/freeingAllocationsFunc.h structures/tableStructure/list.h structures/symbol.h structures/symbolAppearance.h definitions/definitions.h
+process/preAssembler.o: process/preAssembler.c process/preAssembler.h structures/macro.h structures/command.h structures/tableStructure/list.h mainAssembler/utils.h definitions/definitions.h
+process/firstPass.o: process/firstPass.c process/firstPass.h structures/symbol.h structures/tableStructure/list.h process/validationFunctions/errors.h process/utilsPass.h mainAssembler/utils.h definitions/definitions.h
+process/secondPass.o: process/secondPass.c process/secondPass.h structures/symbol.h structures/tableStructure/list.h process/utilsPass.h mainAssembler/utils.h definitions/definitions.h
+process/utilsPass.o: process/utilsPass.c process/utilsPass.h mainAssembler/utils.h structures/tableStructure/list.h definitions/definitions.h
+process/validationFunctions/errors.o: process/validationFunctions/errors.c process/validationFunctions/errors.h process/utilsPass.h structures/tableStructure/list.h definitions/definitions.h
+process/validationFunctions/utilsError.o: process/validationFunctions/utilsError.c process/validationFunctions/utilsError.h definitions/definitions.h
+process/processingFunctions/processingLineFunct.o: process/processingFunctions/processingLineFunct.c process/processingFunctions/processingLineFunct.h definitions/definitions.h
 structures/command.o: structures/command.c structures/command.h
-structures/macro.o: structures/macro.c structures/macro.h tableStructure/list.h structures/command.h
-structures/memWord.o: structures/memWord.c structures/memWord.h
-structures/symbol.o: structures/symbol.c structures/symbol.h process/preassembler.h
-structures/symbolAppearance.o: structures/symbolAppearance.c structures/symbolAppearance.h
-tableStructure/list.o: tableStructure/list.c tableStructure/list.h
-definitions/definitions.o: definitions/definitions.c definitions/definitions.h
+structures/macro.o: structures/macro.c structures/macro.h structures/tableStructure/list.h structures/command.h
+structures/symbol.o: structures/symbol.c structures/symbol.h mainAssembler/freeingAllocationsFunc.h
+structures/symbolAppearance.o: structures/symbolAppearance.c structures/symbolAppearance.h definitions/definitions.h
+structures/tableStructure/list.o: structures/tableStructure/list.c structures/tableStructure/list.h structures/tableStructure/node.h
+
+# Phony targets
+.PHONY: all clean

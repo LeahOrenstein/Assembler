@@ -6,29 +6,28 @@ int processDataInstruction(char* line, ptrNode *dataImage, int* L)
     /*Declaring variables*/
     char* operand, *endOfOperand;
     char tempOperand[MAX_LINE_LENGTH] = {0};
-    char tempLine[MAX_LINE_LENGTH] = {0};
+    char tempLine1[MAX_LINE_LENGTH] = {0};
+    char tempLine2[MAX_LINE_LENGTH] = {0};
     int numOp;
     int i = 0;
     dataType type;
     char memValue[MEMORY_WORD_LENGTH] = {0};
 
-    /*Normalizing the form of the data line*/
-    trimAndFormatString(line, tempLine);
-    line = tempLine;
-
     /*Getting the data type*/
-    type = retDataType(line);
-
-    printf("In processDataInstruction. Type: %d, line: %s\n", type, line);
+    type = retDataType(skipWhitespace(line));
 
     switch (type)
     {
     case ERROR_DATA:
-        printf("Error in data type\n");
         return 0;
     
     case DATA:
+        /*Normalizing the form of the data line*/
+        trimAndFormatString(line, tempLine1);
+        line = tempLine1;
+
         line += DATA_LENGTH;
+
         operand = getOperand(line, &endOfOperand);
         numOp = numOfOperands(line);
         *L = numOp;  /*Update the num of operands variables*/
@@ -45,19 +44,23 @@ int processDataInstruction(char* line, ptrNode *dataImage, int* L)
         break;
 
     case STRING:
+
+        /*Trimming white spaces*/
+        trimWhitespace(line, tempLine2, MAX_LINE_LENGTH);
+        line = tempLine2;
+
         line += STRING_LENGTH + 1;
         operand = getOperand(line, &endOfOperand);
 
         /*Adding each chrecter to the memory by its ascii code*/
-        for ( i = 0; i < strlen(line); i++)
-        {
-            if (line[i] == '"') continue;
-            
+        for ( i = 1; i < strlen(line); i++)
+        {   
+            if (line[i] == '"' && line[i+1] == '\0') break;  /*If we reached the end of the string*/
             intToBinaryString((int)line[i], memValue, MEMORY_WORD_LENGTH);
             appendNode(dataImage, createNode(memValue, NULL));  /*Adding it to the data image*/
         }
 
-        *L = i - 1;  /*Updating L*/
+        *L = i;  /*Updating L*/
 
         /*Adding '\0' to the memory*/
         intToBinaryString((int)'\0', memValue, MEMORY_WORD_LENGTH);
@@ -73,7 +76,7 @@ int processDataInstruction(char* line, ptrNode *dataImage, int* L)
 }
 
 /*Function for processing a code instruction, !after it found valid!*/
-int processCodeInstruction(char* line, ptrNode *codeImage, ptrNode symbolList, ptrNode* symbolMemApearance, int* L, int IC)
+int processCodeInstruction(char* line, ptrNode *codeImage, ptrNode symbolList, ptrNode* symbolMemApearance, int* L, int IC, int lineNumber)
 {
     /*Declaring variables*/
     char* operand, *endOfOperand;
@@ -81,7 +84,6 @@ int processCodeInstruction(char* line, ptrNode *codeImage, ptrNode symbolList, p
     char tempSrcOperand[MAX_LINE_LENGTH] = {0};
     char tempDstOperand[MAX_LINE_LENGTH] = {0};
     boolean twoRegisters = false;
-    ptrSymbol symbol;
     ptrSymbolAppearance symAppearMem;
 
     /*Macros for handlling with opCode*/
@@ -97,39 +99,27 @@ int processCodeInstruction(char* line, ptrNode *codeImage, ptrNode symbolList, p
     /*Strings for the 3 memory words (Not must to be used)*/
     char memValues[3][MEMORY_WORD_LENGTH + 1] = {{0}};
 
-    printf("In processCodeInstruction. Type: %d\n", type);
-
     /*Normalizing the for of the line */
     trimAndFormatString(line, tempLine);
     line = tempLine;
 
-    printf("1\n");
-
     line += strlen(codeInstructions[type]);   /*Skipping the command name*/
     line = skipWhitespace(line);   /*Skipping the white spaces*/
 
-    printf("Line: %s\n", line);
-
     strncpy(memValues[0], getOpCode(type), OPCODE_LENGTH);   /*Processing opCode*/
 
-    printf("memValues[0]: %s\n", memValues[0]);
     /*Processing the adressing mode according to the num of operands for the specific instruction*/
     numOp = numOfOperands(line);
-
-    printf("Num op: %d\n", numOp);
 
     switch (numOp)
     {
     case 2:
-        printf("In case 2 operands\n");
-
         /*Processing the first operand*/
         operand = getOperand(line, &endOfOperand);
         strncpy(tempSrcOperand, operand, endOfOperand - operand); 
         tempSrcOperand[endOfOperand - operand] = '\0';
 
         adModeSrc = checkAdressingMode(tempSrcOperand);
-        printf("tempSrcOperand: %s, adModeSrc: %d\n", tempSrcOperand, adModeSrc);
 
         /*Getting the dst operand's adressing mode for updating the "twoRegisters" falg*/
         operand = getOperand(endOfOperand + 2, &endOfOperand);
@@ -137,18 +127,14 @@ int processCodeInstruction(char* line, ptrNode *codeImage, ptrNode symbolList, p
         tempDstOperand[endOfOperand - operand] = '\0';
 
         adModeDst = checkAdressingMode(tempDstOperand);
-        printf("tempDstOperand: %s, adModeDst: %d\n", tempDstOperand, adModeDst);
 
         /*Setting the source and destination adressing mode*/
         strncpy(memValues[0] + FIRST_SRC_ADRESSING_INDEX, binaryAdressingMode[adModeSrc], 4);  
-        printf("memValues[0]: %s\n", memValues[0]);
         strncpy(memValues[0] + FIRST_DST_ADRESSING_INDEX, binaryAdressingMode[adModeDst], 4);  
-        printf("memValues[0]: %s\n", memValues[0]);
 
         strncpy(memValues[0] + ARE_FIRST_INDEX, A_BINARY, ARE_LENGTH);  /*Setting the A bit*/
 
         twoRegisters = (adModeDst == DIRECT_REGISTER || adModeDst == INDIRECT_REGISTER) && (adModeSrc == DIRECT_REGISTER || adModeSrc == INDIRECT_REGISTER);
-        printf("Two registers: %d\n", twoRegisters);
 
         if (processSrcMemWord(tempSrcOperand, tempDstOperand, memValues[1], adModeSrc, adModeDst, symbolList, twoRegisters) == false) return 0;   /*Processing the source memory word*/
 
@@ -172,7 +158,7 @@ int processCodeInstruction(char* line, ptrNode *codeImage, ptrNode symbolList, p
         appendNode(codeImage, createNode(memValues[0], NULL));
         if (adModeSrc == DIRECT) 
         {
-            symAppearMem = createSymbolAppearance(IC + 1);
+            symAppearMem = createSymbolAppearance(IC + 1, lineNumber);
 
             /*Adding the symbol to the symbol memory apearance list and the uncomleted memory word*/
             appendNode(symbolMemApearance, createNode(tempSrcOperand, symAppearMem));
@@ -183,7 +169,7 @@ int processCodeInstruction(char* line, ptrNode *codeImage, ptrNode symbolList, p
 
         if (adModeDst == DIRECT) 
         {
-            symAppearMem = createSymbolAppearance(IC + 2);
+            symAppearMem = createSymbolAppearance(IC + 2, lineNumber);
             /*Adding the symbol to the symbol memory apearance list and the uncomleted memory word*/
             appendNode(symbolMemApearance, createNode(tempDstOperand, symAppearMem));
         }
@@ -197,16 +183,12 @@ int processCodeInstruction(char* line, ptrNode *codeImage, ptrNode symbolList, p
         return 1;
 
     case 1:
-
-        printf("In case 1 operand\n");
-
         /*Processing the dst operand*/
         operand = getOperand(line, &endOfOperand);
         strncpy(tempDstOperand, operand, endOfOperand - operand);
         tempDstOperand[endOfOperand - operand] = '\0';
 
         adModeDst = checkAdressingMode(tempDstOperand);
-        printf("tempDstOperand: %s, adModeDst: %d\n", tempDstOperand, adModeDst);
 
         /*Setting the adressing modes*/
         strncpy(memValues[0] + FIRST_DST_ADRESSING_INDEX, binaryAdressingMode[adModeDst], 4);
@@ -220,7 +202,7 @@ int processCodeInstruction(char* line, ptrNode *codeImage, ptrNode symbolList, p
         appendNode(codeImage, createNode(memValues[0], NULL));
         if (adModeDst == DIRECT) 
         {
-            symAppearMem = createSymbolAppearance(IC + 1);
+            symAppearMem = createSymbolAppearance(IC + 1, lineNumber);
 
             /*Adding the symbol to the symbol memory apearance list and the uncomleted memory word*/
             appendNode(symbolMemApearance, createNode(tempDstOperand, symAppearMem));
@@ -255,27 +237,42 @@ int processCodeInstruction(char* line, ptrNode *codeImage, ptrNode symbolList, p
 }
 
 /*If the line is valid, processing the extern line*/
-int processExternInstruction(char* line, ptrNode *symbolList)
+int processExternInstruction(char* line, ptrNode *symbolList, int lineNumber, char* fileName)
 {
+    ptrSymbol symbol;
     line += EXTERN_LENGTH + 1;   /*Skipping the ".extern" command and the space after it*/
 
+    /*Check if the external symbol is already defined in the file*/
+    if (searchKey(*symbolList, line) != NULL)
+    {
+        fprintf(stderr, "Error:%s:%d: External symbol %s is also defined in the file.\n", fileName, lineNumber, line);
+        return 0;
+    }
+
+    symbol = createSymbol(0, SYMBOL_TYPE_EXTERN, lineNumber);
+
     /*Creating a symbol and adding it to the symbol list*/
-    appendNode(symbolList, createNode(line, createSymbol(0, SYMBOL_TYPE_EXTERN)));
+    appendNode(symbolList, createNode(line, symbol));
     return 1;
 }
 
 /*If the line is valid, processing the entry line*/
-int processEntryInstruction(char* line, ptrNode *entryList)
+int processEntryInstruction(char* line, ptrNode *entryList, int lineNumber) 
 {
+    ptrSymbol symbol;
+
     line += ENTRY_LENGTH + 1;   /*Skipping the ".entry" command and the space after it*/
 
+    symbol = createSymbol(0, SYMBOL_TYPE_ENTRY, lineNumber);
+
     /*Creating a symbol and adding it to the entry list*/
-    appendNode(entryList, createNode(line, createSymbol(0, SYMBOL_TYPE_ENTRY)));
+    appendNode(entryList, createNode(line, symbol));
+
     return 1;
 }
 
 /*Gets two operands and processing the src memory word - the second one*/
-int processSrcMemWord(char* srcOp, char* dstOp, char srcMem[MEMORY_WORD_LENGTH], adressingMode srcAdMode, adressingMode dstAdMode, ptrNode symbolList, boolean twoRegisters)
+int processSrcMemWord(char* srcOp, char* dstOp, char srcMem[MEMORY_WORD_LENGTH + 1], adressingMode srcAdMode, adressingMode dstAdMode, ptrNode symbolList, boolean twoRegisters)
 {
     int immidiateValue;
 
@@ -326,7 +323,7 @@ int processSrcMemWord(char* srcOp, char* dstOp, char srcMem[MEMORY_WORD_LENGTH],
 }
 
 /*Processing the dst memory word*/
-int processDstMemWord(char* dstOp, char dstMem[MEMORY_WORD_LENGTH], adressingMode dstAdMode)
+int processDstMemWord(char* dstOp, char dstMem[MEMORY_WORD_LENGTH + 1], adressingMode dstAdMode)
 {
     int immidiateValue;
 

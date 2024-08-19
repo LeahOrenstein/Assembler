@@ -4,23 +4,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "mainAssembler/freeingAllocationsFunc.h"
 
-/*Definition of the command structure*/
+/**
+ * @struct command
+ * @brief Represents a single command line.
+ *
+ * This structure holds a single command line as a string.
+ */
 typedef struct
 {
-    char comLine [80];
-}command;
+    char comLine[80]; /**< The command line string, limited to 80 characters. */
+} command;
 
-/*Poiter to a command*/
+/** Pointer to a command structure. */
 typedef command* ptrCommand;
 
-/* Function prototypes */
+/**
+ * @brief Prints a command.
+ *
+ * This function prints the command line stored in the command structure.
+ *
+ * @param ptr Pointer to the command structure to be printed.
+ */
 void printCommand(void* ptr);
+
+/**
+ * @brief Frees the memory allocated for a command.
+ *
+ * This function frees the memory allocated for a command structure.
+ *
+ * @param ptr Pointer to the command structure to be freed.
+ */
 void freeCommand(void* ptr);
 
-
-
-
-
-
-#endif
+#endif /* COMMAND_H */

@@ -1,7 +1,7 @@
 #include "utilsPass.h"
 
 /*Function to check if the line contains a valid data instruction name*/
-int isDataLable(char* line)
+int isDataLine(char* line)
 {
     /* Clearing the line from extra white spaces in the end and begining */
     trimWhitespace(line, line, MAX_LINE_LENGTH);
@@ -17,7 +17,7 @@ int isDataLable(char* line)
 
 
 /*Function to check if the line contains a valid code instruction name*/
-int isCodeLable(char* line)
+int isCodeLine(char* line)
 {
     /*Declaring variables*/
     int i = 0;
@@ -39,7 +39,7 @@ int isCodeLable(char* line)
 }
 
 
-int isExternLable(char* line)
+int isExternLine(char* line)
 {
     /* Clearing the line from extra white spaces in the end and begining */
     trimWhitespace(line, line, MAX_LINE_LENGTH);
@@ -54,7 +54,7 @@ int isExternLable(char* line)
 }
 
 
-int isEntryLable(char* line)
+int isEntryLine(char* line)
 {
     /* Clearing the line from extra white spaces in the end and begining */
     trimWhitespace(line, line, MAX_LINE_LENGTH);

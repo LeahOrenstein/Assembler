@@ -1,15 +1,16 @@
 #include "symbolAppearance.h"
 
 
-ptrSymbolAppearance createSymbolAppearance(int position)
+ptrSymbolAppearance createSymbolAppearance(int position, int lineNum)
 {
     ptrSymbolAppearance newSymbolAppearance = (ptrSymbolAppearance)malloc(sizeof(symbolAppearance));
     if (newSymbolAppearance == NULL)
     {
         fprintf(stderr, "Memory allocation failed\n");
-        exit(1);
+        safeExit(1);
     }
     newSymbolAppearance->position = position;
+    newSymbolAppearance->lineNum = lineNum;
     return newSymbolAppearance;
 }
 

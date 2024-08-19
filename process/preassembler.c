@@ -1,4 +1,4 @@
-#include "preassembler.h"
+#include "preAssembler.h"
 
 
 /*Function for finding all macro definitions*/
@@ -7,7 +7,7 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
     /*Declaring variables*/
     char line[MAX_LINE_LENGTH + 1];
     char trimmedLine[MAX_LINE_LENGTH];
-    int countLines = 1;
+    int countLines = 0;
     char currentMacroName[MAX_LABEL_LENGTH] = "";
     ptrNode macroList = NULL;
 
@@ -27,18 +27,26 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
     /*for each line in the input file*/
     while (fgets(line, sizeof(line), inputFile) != NULL)
     {
+        countLines++;
+
         /*If it is a note line*/
-        if (line[0] == ';') 
-        {
-            countLines++;
-            continue;
-        }
+        if (line[0] == ';')  continue;
 
         /*If the line is to long, there is an error*/
         if (strcspn(line, "\n") >= MAX_LINE_LENGTH)
-        {
-            fprintf(stderr, "Error: Over 80 charecters in line %d in the file %s\n", countLines, inputFileName);
+        { 
+            fprintf(stderr, "Error:%s:%d: Over 80 charecters in line.\n", inputFileName, countLines);
             errorAccured = true;
+
+            /* Consume the rest of the long line */
+            while (strchr(line, '\n') == NULL) 
+            {
+                if (fgets(line, sizeof(line), inputFile) == NULL) 
+                {
+                    break;  /* End of file reached */
+                }
+            }
+
             continue;
         }
 
@@ -50,7 +58,6 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
         /*If it is an empty line*/
         if (trimmedLine[0] == '\0') 
         {
-            countLines++;
             continue;
         }
 
@@ -65,7 +72,7 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
             while (*afterMacroName && !isspace(*afterMacroName)) afterMacroName++;
             if (*afterMacroName != '\0') 
             {
-                fprintf(stderr, "Error: In line %d, file %s - invalid characters after macro name\n", countLines, inputFileName);
+                fprintf(stderr, "Error:%s:%d: Invalid characters after macro name\n", inputFileName, countLines);
                 errorInMacroDef = true;
                 errorAccured = true;
             }
@@ -74,11 +81,30 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
             *afterMacroName = '\0';
             if (afterMacroName - macroName > MAX_LABEL_LENGTH)
             {
-                fprintf(stderr, "Error: Macro name is too long. line %d, file %s\n", countLines, inputFileName);
+                fprintf(stderr, "Error:%s:%d: Macro name is too long, over 31 charecters.\n", inputFileName, countLines);
                 errorInMacroDef = true;
             }
 
-            if (errorInMacroDef) continue;
+            /*Check if the macro name is a known word in the assembly language*/
+            if(isRegister(macroName) || isCodeLine(macroName) || isExternLine(macroName) || isEntryLine(macroName) || (strncmp(macroName, "macr", 4) == 0 && isSpaceOrEnd(macroName[4])) || (strncmp(macroName, "endmacr", 7) == 0 && isSpaceOrEnd(macroName[7])))
+            {
+                fprintf(stderr, "Error:%s:%d: Macro name is a known word in the assembly language\n", inputFileName, countLines);
+                errorInMacroDef = true;
+                errorAccured = true;
+            }
+
+            /*Check if the macro name is already defined*/
+            if (searchKey(macroList, macroName) != NULL) 
+            {
+                fprintf(stderr, "Error:%s:%d: Macro name is already used\n", inputFileName, countLines);
+                errorInMacroDef = true;
+                errorAccured = true;
+            }
+
+            if (errorInMacroDef) 
+            {
+                continue;
+            }
 
             /* Copy macro name */
             strncpy(currentMacroName, macroName, MAX_LABEL_LENGTH - 1);
@@ -88,8 +114,8 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
             currentMacro = (ptrMacro)malloc(sizeof(macro));
             if (currentMacro == NULL) 
             {
-                fprintf(stderr, "Memory allocation failed for macro\n");
-                exit(1);
+                fprintf(stderr, "Memory allocation failed for a macro structure\n");
+                safeExit(1);
             }
             currentMacro->commandList = NULL;
         } 
@@ -99,7 +125,7 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
             /* Check if there's anything after 'endmacr' */
             if (strlen(trimmedLine) > 7) 
             {
-                fprintf(stderr, "Error: In line %d, file %s - invalid characters after 'endmacr'\n", countLines, inputFileName);
+                fprintf(stderr, "Error:%s:%d: Invalid characters after 'endmacr'\n", inputFileName, countLines);
                 inMacroDefinition = false;
                 errorAccured = true;
                 errorInMacroDef = true; 
@@ -132,7 +158,7 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
             if (newCommand == NULL) 
             {
                 fprintf(stderr, "Memory allocation failed for command\n");
-                exit(1);
+                safeExit(1);
             }
 
             strcpy(newCommand->comLine, line);
@@ -143,10 +169,7 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
             /* If not in a macro definition, write line to output file */
             fprintf(outputFile, "%s\n", line);
         }
-
-        countLines++;
     }
-
 
     *ptrMacroList = macroList;
 
@@ -157,17 +180,21 @@ int processMacroDefinitions(FILE* inputFile, FILE* outputFile, ptrNode *ptrMacro
 
 
 /*Function for replacing the calls for macro to the macro's commands*/
-int expandMacros(FILE* inputFile, FILE* outputFile, ptrNode macroList)  
+int expandMacros(FILE* inputFile, FILE* outputFile, ptrNode macroList, const char* inputFileName)  
 {
     char line[MAX_LINE_LENGTH];
     char trimmedLine[MAX_LINE_LENGTH];
+    char label[MAX_LINE_LENGTH];
+    char tempLabel[MAX_LINE_LENGTH];
     char tempMacAfterLable[MAX_LINE_LENGTH];
     char checkMacAfterLable[MAX_LINE_LENGTH];
+    int lineNum = 1;
     ptrNode macroNode;
     ptrMacro macro;
     ptrNode currentCommand;
     ptrCommand cmd;
-    int i; 
+    boolean error = false;
+    int i;
 
     /*For each line in the input file*/
     while (fgets(line, MAX_LINE_LENGTH, inputFile)) 
@@ -176,13 +203,6 @@ int expandMacros(FILE* inputFile, FILE* outputFile, ptrNode macroList)
         
         /* Clearing the begining and the end from white spaces */
         trimWhitespace(line, trimmedLine, MAX_LINE_LENGTH);
-
-        /*Taking care of note lines*/
-        if (trimmedLine[0] == ';')
-        {
-            fprintf(outputFile, "%s\n", line);
-            continue;
-        }
 
         /*Taking care about macro after a lable definition*/
         i = 0;
@@ -195,6 +215,17 @@ int expandMacros(FILE* inputFile, FILE* outputFile, ptrNode macroList)
 
         if (trimmedLine[i] == ':')
         {
+            strncpy(label, trimmedLine, i + 1);
+            tempLabel[i + 1] = '\0';
+
+            trimWhitespace(tempLabel, label, MAX_LINE_LENGTH);
+
+            /*Checking if the lable is a macro name*/
+            if (searchKey(macroList, label) != NULL)
+            {
+                fprintf(stderr, "Error:%s:%d: Lable is a macro name.\n", inputFileName, lineNum);
+                error = true;
+            }
 
             /*Checking if there is a macro call after the lable*/
             strncpy(tempMacAfterLable, trimmedLine + i + 1, strlen(trimmedLine) - i + 1);
@@ -204,7 +235,7 @@ int expandMacros(FILE* inputFile, FILE* outputFile, ptrNode macroList)
             if (checkMacAfterLable == NULL) 
             {
                 fprintf(stderr, "Memory allocation failed while expanding macros\n");
-                exit(1);
+                safeExit(1);
             }
 
             macroNode = searchKey(macroList, checkMacAfterLable);
@@ -226,7 +257,9 @@ int expandMacros(FILE* inputFile, FILE* outputFile, ptrNode macroList)
                     fprintf(outputFile, "%s\n", cmd->comLine);
                     currentCommand = currentCommand->next;
                 }
+
                 macroNode = NULL; 
+                lineNum++;
                 continue;
             }          
         }
@@ -256,16 +289,18 @@ int expandMacros(FILE* inputFile, FILE* outputFile, ptrNode macroList)
             /*The current line is not a macro name, we'll write it to the output file as is*/
             fprintf(outputFile, "%s\n", line);
         }
+
+        lineNum++;
     }
 
     /*Success*/
-    return 1;
+    return error? false : true;
 }
 
 
 
 /*Function for managing the pre assembler*/
-int preprocessFile(const char* inputFileName, const char* outputFileName) 
+int preprocessFile(const char* inputFileName, const char* outputFileName, ptrNode* macroList) 
 {
     /*Variable for a temporary file, that will store the file between taking care of definitions and expanding*/
     char intermediateFileName[] = "intermediate_file.tmp";
@@ -274,38 +309,44 @@ int preprocessFile(const char* inputFileName, const char* outputFileName)
     /*Flags*/
     int errorAccured = false;
     int macDefSuccess;
-
-    ptrNode macroList = NULL;
-
+    
     /* Open input file */
     inputFile = fopen(inputFileName, "r");
     if (inputFile == NULL) 
     {
         fprintf(stderr, "Error opening input file: %s\n", inputFileName);
-        errorAccured = true;
+        return false;
     }
+
+    /*Update the global pointers*/
+    INPUT_FILE = inputFile;
 
     /* Open intermediate file */
     intermediateFile = fopen(intermediateFileName, "w");
     if (intermediateFile == NULL) 
     {
         fprintf(stderr, "Error opening intermediate file for pre-assembling file %s\n", inputFileName);
-        fclose(inputFile);
-        errorAccured = true;
+        safeExit(1);
     }
 
+    /*Update the global pointer*/
+    INTERMEDIATE_FILE = intermediateFile;
+
     /* Level 1: finding and deleting the macros' definitions*/
-    macDefSuccess = processMacroDefinitions(inputFile, intermediateFile, &macroList, inputFileName);
-    
-    fclose(inputFile);
-    fclose(intermediateFile);
+    macDefSuccess = processMacroDefinitions(inputFile, intermediateFile, macroList, inputFileName);
+    fflush(intermediateFile);
 
     /*If there is an error while finding macro definitions*/
     if(!macDefSuccess) 
     {
+        fclose(intermediateFile);
+        INTERMEDIATE_FILE = NULL;
         remove(intermediateFileName);
-        return 0;
+        return false;
     }
+
+    fclose(intermediateFile);
+    INTERMEDIATE_FILE = NULL;
 
     /* Open intermediate file for reading and output file for writing */
     intermediateFile = fopen(intermediateFileName, "r");
@@ -313,34 +354,41 @@ int preprocessFile(const char* inputFileName, const char* outputFileName)
     if (intermediateFile == NULL || outputFile == NULL) 
     {
         fprintf(stderr, "Error opening files for macro expansion while pre-assembling file %s\n", inputFileName);
-        if (intermediateFile) fclose(intermediateFile);
-        if (outputFile) fclose(outputFile);
-        freeList(&macroList, freeMacro);
+        fclose(intermediateFile);
+
+        /*Update the global pointer*/
+        INTERMEDIATE_FILE = NULL;
+
         remove(intermediateFileName);
+
+        if (outputFile == NULL) 
+        {
+            INTERMEDIATE_FILE = intermediateFile;
+            safeExit(1);
+        }
+        
         errorAccured = true;
     }
+
+    /*Update the global pointers*/
+    AM_FILE = outputFile;
+    INTERMEDIATE_FILE = intermediateFile;
 
     /* Level 2: macro retirement*/
-    expandMacros(intermediateFile, outputFile, macroList);
-    
-    /* Closing files */
-    if (fclose(intermediateFile) != 0) 
+    if (!expandMacros(intermediateFile, outputFile, *macroList, inputFileName)) 
     {
-        fprintf(stderr, "Error closing intermediate file while pre-assembling file %s\n", inputFileName);
-        errorAccured = true;
-    }
-    if (fclose(outputFile) != 0) 
-    {
-        fprintf(stderr, "Error closing output file while pre-assembling file %s\n", inputFileName);
         errorAccured = true;
     }
 
+    fflush(outputFile);
 
-    /* Freeing the list and removing the extra file */
-    freeList(&macroList, freeMacro);
+    /* removing and closing the extra file */
+    fclose(intermediateFile);
+    INTERMEDIATE_FILE = NULL;
+
     remove(intermediateFileName);
 
     /*Returning 1 for success, 0 if errors were found*/
-    return errorAccured? 0 : 1;  
+    return errorAccured? false : true;  
 }
 

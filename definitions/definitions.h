@@ -1,8 +1,11 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
+#include <stdio.h>
 
-/*A file for the definitions*/
+#include "structures/tableStructure/node.h"
+
+/*File for the definitions*/
 
 #define MAX_LINE_LENGTH 81
 #define MAX_LABEL_LENGTH 31
@@ -15,6 +18,8 @@
 #define MAX_IMMIDIATE_VALUE 2047
 #define MAX_INTEGER_VALUE 16383
 #define MIN_INTEGER_VALUE -16384
+
+#define MAX_MEMORY_SIZE 4096
 
 #define NUM_OF_REGISTERS 8
 #define NUM_OF_CODE_INSTRUCTIONS 16
@@ -67,6 +72,8 @@ typedef enum{IMMIDIATE, DIRECT, INDIRECT_REGISTER, DIRECT_REGISTER, ADRRESING_ER
 
 #define OPCODE_BINARY {"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111", "1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111", "????"}
 
+#define MEMORY_WORD_LENGTH 15
+
 /*Definitions for data instructions*/
 #define DATA_INSTRUCTIONS {".data", ".string", NULL}
 typedef enum {STRING, DATA, ERROR_DATA} dataType;
@@ -80,6 +87,26 @@ typedef enum {ENTRY, EXTERN, ERROR_EXTERN_ENTRY} externEntryType;
 #define ENTRY_LENGTH 6
 #define EXTERN_LENGTH 7
 #define LENGTH_OF_EX_EN {ENTRY_LENGTH, EXTERN_LENGTH}
+
+enum {inputFileName, baseName, amFile, obFile, entFile, extFile};
+
+/*Global variables for freeing the memory from each sub-function if needed*/
+char* FILE_NAMES_PTR[6];
+ptrNode* SYMBOL_LIST_PTR;
+ptrNode* ENTRY_LIST_PTR;
+ptrNode* MEM_IMAGE_PTR;
+ptrNode* SYM_APPEAR_MEM_PTR;
+ptrNode* CODE_IMAGE_PTR;
+ptrNode* DATA_IMAGE_PTR;
+ptrNode* MACRO_LIST_PTR;
+
+FILE *INPUT_FILE;
+FILE *AM_FILE;
+FILE *OB_FILE;
+FILE *ENT_FILE;
+FILE *EXT_FILE;
+FILE *INTERMEDIATE_FILE;
+
 
 
 #endif

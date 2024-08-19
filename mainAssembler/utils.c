@@ -21,15 +21,18 @@ void trimWhitespace(const char* str, char* result, size_t result_size)
 char* AllocateMemFileName(const char* fileName, size_t size)
 {
     /*Allocating memory for the variable*/
-    char* string = malloc(sizeof(char)* size);
+    char* string = malloc(sizeof(char)* (size + 1));
+
     if (string == NULL)
     {
-        fprintf(stderr, "Error: can not allocate memory for a file name\n");
-        exit(1);
+        fprintf(stderr, "Error: Can not allocate memory for a file name\n");
+        safeExit(1);
     }   
 
     /*Updating the variable*/  
     strncpy(string, fileName, size);
+
+    string[size] = '\0';
 
     /*Returning*/
     return string;
@@ -47,7 +50,6 @@ char* skipWhitespace(char* str)
 
     return str;
 }
-
 
 
 void trimAndFormatString(const char *input, char output[MAX_LINE_LENGTH]) 
@@ -110,3 +112,10 @@ void trimAndFormatString(const char *input, char output[MAX_LINE_LENGTH])
     /* Null-terminate the string */
     output[j] = '\0';
 }
+
+
+boolean isSpaceOrEnd(char c)
+{
+    return c == ' ' || c == '\0' || c == '\t' || c == '\n' || c == EOF;
+}
+

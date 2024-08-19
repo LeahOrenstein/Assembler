@@ -1,13 +1,11 @@
 #include "firstPass.h"
 
 /* Function for managing the first pass */
-int firstPass(char* inputFileName, ptrNode* memoryImage, ptrNode* symbolListPtr, ptrNode* entryList)
+int firstPass(char* inputFileName, ptrNode* memoryImage, ptrNode* symbolListPtr, ptrNode* symAppearMem, ptrNode* entryList, int* IC, int* DC)
 {
     /*Declaring variables*/
 
     /*Counters*/
-    int IC = 100;
-    int DC = 0;
     int lineNumber = 0;
 
     /*Flags*/
@@ -17,8 +15,6 @@ int firstPass(char* inputFileName, ptrNode* memoryImage, ptrNode* symbolListPtr,
     char line[MAX_LINE_LENGTH];
 
     /*Lists*/
-    ptrNode symbolList = NULL;
-    ptrNode symAppearMem = NULL;
     ptrNode dataImage = NULL;
     ptrNode codeImage = NULL;
 
@@ -30,11 +26,16 @@ int firstPass(char* inputFileName, ptrNode* memoryImage, ptrNode* symbolListPtr,
         return false;
     }
 
+    /*Update the global pointers*/
+    AM_FILE = inputFile;
+    CODE_IMAGE_PTR = &codeImage;
+    DATA_IMAGE_PTR = &dataImage;
+
     /*Reading the file line by line and processing it*/
     while (fgets(line, MAX_LINE_LENGTH, inputFile) != NULL)
     {
         lineNumber++;
-        isErrorInLine = processLine(inputFileName, line, &symbolList, &entryList, &codeImage, &dataImage, &symAppearMem, &IC, &DC, lineNumber);
+        isErrorInLine = processLine(inputFileName, line, symbolListPtr, entryList, &codeImage, &dataImage, symAppearMem, IC, DC, lineNumber);
         /*If an error found in the line*/
         if (!isErrorInLine)
         {
@@ -42,16 +43,20 @@ int firstPass(char* inputFileName, ptrNode* memoryImage, ptrNode* symbolListPtr,
         }
     }
 
-    /*Close file*/
-    fclose(inputFile);
-    /*Free allocated memory!!*/
+    /*Create the final lists*/
+    appendNode(&codeImage, dataImage);
+
+    *memoryImage = codeImage;
+
+    CODE_IMAGE_PTR = NULL;
+    DATA_IMAGE_PTR = NULL;
 
     return error? false : true;
 
 }
 
 
-int processLine(char* inputFileName, char* line, ptrNode* symbolListPtr, ptrNode entryList, ptrNode* codeImage, ptrNode* dataImage, ptrNode* symAppearMem, int* IC, int* DC, int lineNumber)
+int processLine(char* inputFileName, char* line, ptrNode* symbolListPtr, ptrNode* entryList, ptrNode* codeImage, ptrNode* dataImage, ptrNode* symAppearMem, int* IC, int* DC, int lineNumber)
 {
     /*Declaring variables*/
     char labelName[MAX_LABEL_LENGTH] = {0};
@@ -62,16 +67,20 @@ int processLine(char* inputFileName, char* line, ptrNode* symbolListPtr, ptrNode
     int L = 0;
     int i = 0;
 
-    /*Checking if it is a note line*/
-    if (line[0] == ';')
-    {
-        /*If it is a note line - skip it*/
-        return 1;
-    }
+    /*No notes line, we'v skipped them in the pre-assembler*/
 
     /* Clearing the line from extra white spaces in the end and begining, using the temporary line */
-    trimWhitespace(line, tempLine, MAX_LINE_LENGTH);  
+    trimWhitespace(line, tempLine, MAX_LINE_LENGTH); 
     line = tempLine;
+
+
+
+    /*If the line is a note line - error, the ; was not the first charecter (wasn't recognized by the pre-assemble)*/
+    if (line[0] == ';')
+    {
+        fprintf(stderr, "Error: Illegal note in the middle of the line. file %s, line %d\n", inputFileName, lineNumber);
+        return false;
+    }
 
     /*Look for a label declaration*/
     while (i < strlen(line) && line[i] != ':')  i++; 
@@ -88,72 +97,40 @@ int processLine(char* inputFileName, char* line, ptrNode* symbolListPtr, ptrNode
         trimWhitespace(labelNameTemp, labelNameTemp, MAX_LINE_LENGTH);
         sprintf(labelNameTemp,"%.*s\0", strlen(labelNameTemp) - 1, labelNameTemp);
 
+        /*If there is no white space after the label*/
+        if (line[i + 1] != ' ' && line[i + 1] != '\t')
+        {
+            /*Error - invalid label name*/
+            fprintf(stderr, "Error: Missing white space after label. File %s, line %d\n", inputFileName, lineNumber);
+            error = true;
+        }
+
         if (errorInLabel(labelNameTemp , inputFileName, lineNumber, *symbolListPtr))
         {
             /*Error - invalid label name*/
-            fprintf(stderr, "Error: Invalid label name in line %d file %s\n", lineNumber, inputFileName);
             error = true;
         }
         else
         {
             /*Copying the label name to a new string*/
-
             sprintf(labelName, "%.*s\0", i, line);
         }
 
         /*Checking if the command after the label is valid*/
 
         /*If it is a data instruction*/
-        if (isDataLable(line + i + 1))
+        if (isDataLine(line + i + 1))
         {
-            /*And it is a valid data instruction*/
-            if (!errorInData(line + i + 1, inputFileName, lineNumber) && !error)
-            {
-                /*Adding the label to the symbols table*/
-                appendNode(symbolListPtr, createNode(labelName ,createSymbol(*DC, SYMBOL_TYPE_DATA)));
-            }
-            else
-                error = true;
+            /*Adding the label to the symbols table*/
+            appendNode(symbolListPtr, createNode(labelName ,createSymbol(*DC, SYMBOL_TYPE_DATA, lineNumber)));
         }
 
         /*If it is a code instruction*/
-        else if (isCodeLable(line + i + 1))
+        else if (isCodeLine(line + i + 1))
         {   
-            /*And it is a valid code instruction*/
-            if (!errorInCode(line + i + 1, inputFileName, lineNumber) && !error)
-            {
-                /*Adding the label to the symbols table*/
-                appendNode(symbolListPtr, createNode(labelName ,createSymbol(*IC, SYMBOL_TYPE_CODE)));
-            }
-            else
-                error = true;
-        }
-
-        /*If it is an extern instruction*/
-        else if (isExternLable(line + i + 1))
-        {
-            /*And it is a valid extern instruction*/
-            if (errorInExEn(line + i + 1, inputFileName, lineNumber) && !error)
-            {
-                /*Adding the label to the extern list*/
-                appendNode(symbolListPtr, createNode(labelName ,createSymbol(0, SYMBOL_TYPE_BEFORE_EX_EN)));
-            } 
-            else
-                error = true;  
-        }
-
-        /*If it is an entry instruction*/
-        else if (isEntryLable(line + i + 1))
-        {
-            /*And it is a valid entry instruction*/
-            if (!errorInExEn(line + i + 1, inputFileName, lineNumber) && !error)
-            {
-                /*Adding the label to the entry list*/
-                appendNode(symbolListPtr, createNode(labelName ,createSymbol(0, SYMBOL_TYPE_BEFORE_EX_EN)));
-            }
-            else
-                error = true;
-        }
+            /*Adding the label to the symbols table*/
+            appendNode(symbolListPtr, createNode(labelName ,createSymbol(*IC, SYMBOL_TYPE_CODE, lineNumber)));
+        }            
 
         /*If there is nothing after the label*/
         else if (i + 1 == strlen(line))
@@ -165,17 +142,19 @@ int processLine(char* inputFileName, char* line, ptrNode* symbolListPtr, ptrNode
             
         else
         {
-            /*Error - invalid command after the label*/
-            fprintf(stderr, "Error: Invalid command after the label in line %d file %s\n", lineNumber, inputFileName);
-            return false;
+            if (!isExternLine(line + i + 1) || isEntryLine(line + i + 1)) /*If before extern or entry command - don't add to the symbol table*/
+            {
+                /*Error - invalid command after the label*/
+                appendNode(symbolListPtr, createNode(labelName ,createSymbol(*IC, SYMBOL_TYPE_CODE, lineNumber)));
+                fprintf(stderr, "Error: Invalid command after the label in line %d file %s\n", lineNumber, inputFileName);
+                return false;
+            }
         }
         i++;
     }
 
     if (error)
     {
-        /******************Debug */
-        printf("Error in line\n");
         return false;
     }
 
@@ -186,7 +165,7 @@ int processLine(char* inputFileName, char* line, ptrNode* symbolListPtr, ptrNode
     line += i;
     line = skipWhitespace(line);
 
-    if (isDataLable(line))
+    if (isDataLine(line))
     {
         /*If it is a valid data instruction*/
         if (!errorInData(line, inputFileName, lineNumber))
@@ -195,37 +174,53 @@ int processLine(char* inputFileName, char* line, ptrNode* symbolListPtr, ptrNode
             processDataInstruction(line, dataImage, &L);
             *DC += L;  /*Updating the DC*/
         }
+        else
+        {
+            error = true;
+        }
     }
 
-    else if (isCodeLable(line))
+    else if (isCodeLine(line))
     {
         /*If it is a valid code instruction*/
         if (!errorInCode(line, inputFileName, lineNumber))
         {
             /*Processing the code instruction and adding it to the memory*/
-            processCodeInstruction(line, codeImage, *symbolListPtr, symAppearMem, &L, *IC);
+            processCodeInstruction(line, codeImage, *symbolListPtr, symAppearMem, &L, *IC, lineNumber);
 
             /*Updating the IC*/
             *IC += L;
             L = 0;
         }
+        else
+        {
+            error = true;
+        }
     }
 
-    else if (isExternLable(line))
+    else if (isExternLine(line))
     {
         /*If it is a valid extern instruction*/
         if (!errorInExEn(line, inputFileName, lineNumber))
         {
-            if(!processExternInstruction(line, symbolListPtr))   error = true;  /*Process the extern line*/
+            if(!processExternInstruction(line, symbolListPtr, lineNumber, inputFileName))   error = true;  /*Process the extern line*/
         }   
+        else
+        {
+            error = true;
+        }
     }
 
-    else if (isEntryLable(line))
+    else if (isEntryLine(line))
     {
         /*If it is a valid entry instruction*/
         if (!errorInExEn(line, inputFileName, lineNumber))
         {
-            if(!processEntryInstruction(line, entryList))   error = true;  /*Process the entry line*/
+            if(!processEntryInstruction(line, entryList, lineNumber))   error = true;  /*Process the entry line*/
+        }
+        else
+        {
+            error = true;
         }
     }
 
