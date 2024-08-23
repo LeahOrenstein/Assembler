@@ -1,3 +1,47 @@
+/**
+
+# Assembler Program
+
+Author: Leah Orenstein
+August 2024 
+
+This program implements a two-pass assembler for a custom assembly language. It processes assembly language source files and generates machine code output.
+
+## Key Components:
+
+1. **Pre-assembler**: Handles macro expansions in the source code.
+2. **First Pass**: 
+   - Builds the symbol table
+   - Processes assembly instructions and data directives
+   - Performs initial error checking
+3. **Second Pass**:
+   - Resolves symbol addresses
+   - Generates final machine code
+   - Creates output files (.ob, .ext, .ent)
+
+## Main Function Flow:
+
+1. Processes command line arguments to get input file names
+2. For each input file:
+   - Runs the pre-assembler
+   - Performs the first pass
+   - If no errors, performs the second pass
+   - Generates output files
+3. Handles memory allocation and deallocation
+4. Provides error reporting and management
+
+This assembler is designed to be modular and extensible, with separate components handling different aspects of the assembly process.
+
+## Note on Debugging Functions:
+This program includes several print functions that were used for debugging during development. These functions are currently not in use in the main program flow but have been left in the code for potential future debugging needs or enhancements.
+
+*/
+
+
+
+
+
+
 
 #include "definitions/definitions.h"
 #include "structures/tableStructure/list.h"
@@ -62,11 +106,11 @@ int main(int argc, char *argv[])
         errorFound = false;
 
         /*Generate output file names*/
-        sprintf(fileNames[inputFileName], "%s.as\0", fileNames[baseName]);
-        sprintf(fileNames[amFile], "%s.am\0", fileNames[baseName]);
-        sprintf(fileNames[obFile], "%s.ob\0", fileNames[baseName]);
-        sprintf(fileNames[entFile], "%s.ent\0", fileNames[baseName]);
-        sprintf(fileNames[extFile], "%s.ext\0", fileNames[baseName]);
+        sprintf(fileNames[inputFileName], "%s.as", fileNames[baseName]);
+        sprintf(fileNames[amFile], "%s.am", fileNames[baseName]);
+        sprintf(fileNames[obFile], "%s.ob", fileNames[baseName]);
+        sprintf(fileNames[entFile], "%s.ent", fileNames[baseName]);
+        sprintf(fileNames[extFile], "%s.ext", fileNames[baseName]);
 
         /*Updating the global pointers for freeing case*/
         MACRO_LIST_PTR = &macroList;
@@ -93,7 +137,7 @@ int main(int argc, char *argv[])
             errorFound = true;
         }
 
-        /*Check if there is a memory exception*/
+        /*Check if there is a memory overflow*/
         if (IC + DC > MAX_MEMORY_SIZE)
         {
             fprintf(stderr, "Error: Memory overflow.\n");

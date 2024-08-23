@@ -9,6 +9,7 @@ int isDataLine(char* line)
     /*If the line contains a valid data instriction - return 1*/
     if (strncmp(line, ".data", 5) == 0 || strncmp(line, ".string", 7) == 0)
     {
+        if (!(line[5] == ' ' || line[5] == '\0') && !(line[7] == ' ' || line[7] == '\0')) return 0;
         return 1;
     }
 
@@ -31,6 +32,7 @@ int isCodeLine(char* line)
     {
         if (strncmp(line, codeInstructions[i], strlen(codeInstructions[i])) == 0)
         {
+            if (!(line[strlen(codeInstructions[i])] == ' ' || line[strlen(codeInstructions[i])] == '\0')) return 0;
             return 1;
         }
     }
@@ -47,6 +49,7 @@ int isExternLine(char* line)
     /*If the line contains a valid code instriction - return 1*/
     if (strncmp(line, ".extern", 7) == 0)
     {
+        if (!(line[7] == ' ' || line[7] == '\0')) return 0;
         return 1;
     }
 
@@ -62,6 +65,7 @@ int isEntryLine(char* line)
     /*If the line contains a valid code instriction - return 1*/
     if (strncmp(line, ".entry", 6) == 0)
     {
+        if (!(line[6] == ' ' || line[6] == '\0')) return 0;
         return 1;
     }
 

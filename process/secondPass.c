@@ -251,7 +251,6 @@ int symbolValidation(char* inputFileName, ptrNode symbolList, ptrNode memAppearL
 /*The second pass process*/
 int secondPass(char* FileNames[6], ptrNode memoryImage, ptrNode symbolList, ptrNode enteryList, ptrNode symAppearMem, int IC, int DC, boolean errorFound)
 {
-    printf("errorFound: %d\n", errorFound);
     /*Update the position of the data symbols in the symbol list*/
     if (symbolPositionUpdate(symbolList, IC) == false)  errorFound = true;
 
