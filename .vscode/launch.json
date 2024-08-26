@@ -5,7 +5,7 @@
             "name": "Debug Program",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/correct_name.exe", // שני את זה לשם הנכון
+            "program": "${workspaceFolder}/assembler.exe",
             "args": ["input_file_1.as", "input_valid_2.as"],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
