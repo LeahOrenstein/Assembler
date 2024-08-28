@@ -71,6 +71,14 @@ For each input file, the assembler generates:
 
 Examples of these output files can be found in the `valid_inputs_examples/` directory.
 
+## Bit Translation Process
+
+During the assembly process, each instruction in the assembly code is translated into binary machine code:
+
+- Opcode and Operands Encoding: Each instruction is converted into binary format, with the opcode and operands encoded according to the specified addressing mode (e.g., immediate, direct, indirect).
+- Symbol Resolution: Labels used as operands are replaced with their corresponding memory addresses from the symbol table. If a label refers to an external symbol, this is marked accordingly in the binary code.
+- A,R,E Field: Each word in the machine code includes an A,R,E field, which is relevant during the linkage and loading stages.
+  
 ## Error Handling
 
 The assembler performs extensive error checking and will report any syntax errors, undefined symbols, or other issues encountered during the assembly process. Examples of error messages for invalid inputs can be found in the `invalid_inputs_examples/` directory.
